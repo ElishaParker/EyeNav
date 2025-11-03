@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>EyeNav Minimal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -21,54 +22,55 @@
       left: 50%; top: 50%;
       transform: translate(-50%, -50%);
     }
+    #startCal, #saveCal, #loadCal {
+      position: fixed;
+      bottom: 20px;
+      background: cyan; color: black;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none; border-radius: 10px;
+      z-index: 20;
+      cursor: pointer;
+    }
+    #startCal { left: 20px; }
+    #saveCal { left: 160px; }
+    #loadCal { left: 300px; }
+    #calibration {
+      position: fixed; inset: 0;
+      display: flex; justify-content: center; align-items: center;
+      flex-wrap: wrap; gap: 15vh;
+      background: rgba(0,0,0,0.8);
+      z-index: 10; visibility: hidden;
+    }
+    .cal-point {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: cyan; opacity: 0.8;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .cal-point.active {
+      transform: scale(1.6); opacity: 1;
+    }
   </style>
 
   <!-- Load WebGazer -->
   <script src="https://cdn.jsdelivr.net/npm/webgazer/dist/webgazer.min.js"></script>
+  <script src="main.js" defer></script>
 </head>
 <body>
   <div id="dot"></div>
 
-  <script>
-    // Wait until WebGazer is ready
-    window.addEventListener('load', () => {
-      const dot = document.getElementById('dot');
-      let smoothX = window.innerWidth / 2;
-      let smoothY = window.innerHeight / 2;
-      const smoothFactor = 0.2;
+  <!-- Calibration UI -->
+  <div id="calibration">
+    <div class="cal-point" data-pos="0"></div>
+    <div class="cal-point" data-pos="1"></div>
+    <div class="cal-point" data-pos="2"></div>
+    <div class="cal-point" data-pos="3"></div>
+    <div class="cal-point" data-pos="4"></div>
+  </div>
 
-      // --- Initialize WebGazer ---
-      webgazer.setRegression('ridge')
-        .setTracker('clmtrackr')
-        .begin()
-        .then(() => {
-          // Turn off all built-in visuals
-          webgazer.showVideo(false);
-          webgazer.showFaceOverlay(false);
-          webgazer.showFaceFeedbackBox(false);
-          webgazer.showPredictionPoints(false);
-          // Disable default system cursor dot if present
-          if (webgazer.params) {
-            webgazer.params.showGazeDot = false;
-            webgazer.params.applyKalmanFilter = true;
-          }
-        });
-
-      // --- Custom gaze listener ---
-      webgazer.setGazeListener((data) => {
-        if (!data) return;
-        smoothX = smoothX * (1 - smoothFactor) + data.x * smoothFactor;
-        smoothY = smoothY * (1 - smoothFactor) + data.y * smoothFactor;
-        dot.style.left = `${smoothX - 8}px`;
-        dot.style.top  = `${smoothY - 8}px`;
-      });
-
-      // --- Resize safety ---
-      window.addEventListener('resize', () => {
-        smoothX = window.innerWidth / 2;
-        smoothY = window.innerHeight / 2;
-      });
-    });
-  </script>
+  <!-- Control Buttons -->
+  <button id="startCal">Start Calibration</button>
+  <button id="saveCal">Save Calibration</button>
+  <button id="loadCal">Load Calibration</button>
 </body>
 </html>

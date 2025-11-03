@@ -13,7 +13,7 @@ window.addEventListener('load', () => {
       webgazer.showFaceOverlay(false);
       webgazer.showFaceFeedbackBox(false);
       webgazer.showPredictionPoints(false);
-      webgazer.saveDataAcrossSessions(true); // ✅ automatic persistence
+      webgazer.saveDataAcrossSessions(true); // auto persist calibration
       if (webgazer.params) {
         webgazer.params.showGazeDot = false;
         webgazer.params.applyKalmanFilter = true;
@@ -34,7 +34,7 @@ window.addEventListener('load', () => {
     smoothY = window.innerHeight / 2;
   });
 
-  // --- Calibration overlay ---
+  // --- Calibration overlay setup ---
   const calBtn = document.getElementById('startCal');
   const resetBtn = document.getElementById('resetCal');
   const calBox = document.getElementById('calibration');
@@ -50,6 +50,10 @@ window.addEventListener('load', () => {
     await runCalibration();
     calBox.style.visibility = 'hidden';
     calBtn.style.visibility = 'visible';
+
+    // 🔧 force model retraining after full calibration
+    webgazer.train();
+
     alert('Calibration complete ✅');
   };
 
@@ -60,6 +64,7 @@ window.addEventListener('load', () => {
       el.style.left = `${p.x * window.innerWidth - 15}px`;
       el.style.top  = `${p.y * window.innerHeight - 15}px`;
       el.classList.add('active');
+
       await collectPoint(p);
       el.classList.remove('active');
     }
@@ -67,12 +72,14 @@ window.addEventListener('load', () => {
 
   function collectPoint(p) {
     return new Promise(resolve => {
-      const duration = 1500;
+      const duration = 1500; // ms to sample each point
       const start = performance.now();
       const timer = setInterval(() => {
         const now = performance.now();
         if (now - start > duration) {
           clearInterval(timer);
+          // 🔧 retrain the model after each calibration point
+          webgazer.train();
           resolve();
         } else {
           webgazer.recordScreenPosition(

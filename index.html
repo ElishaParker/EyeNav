@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EyeNav Minimal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body, html {
+      margin: 0; padding: 0;
+      width: 100vw; height: 100vh;
+      overflow: hidden; background: black;
+    }
+    #videoFeed {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      transform: scaleX(-1);
+      filter: brightness(1.3) contrast(1.2);
+      z-index: -1;
+    }
+    #dot {
+      position: fixed;
+      width: 16px; height: 16px;
+      background: cyan;
+      border-radius: 50%;
+      pointer-events: none;
+      mix-blend-mode: difference;
+    }
+  </style>
+
+  <!-- Load WebGazer -->
+  <script src="https://cdn.jsdelivr.net/npm/webgazer/dist/webgazer.min.js"></script>
+</head>
+<body>
+  <video id="videoFeed" autoplay playsinline></video>
+  <div id="dot"></div>
+
+  <script>
+    // --- 1. Webcam feed
+    const video = document.getElementById('videoFeed');
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(stream => video.srcObject = stream)
+      .catch(err => alert('Camera error: ' + err));
+
+    // --- 2. WebGazer initialization
+    window.webgazer.setRegression('ridge')
+      .setTracker('clmtrackr')
+      .begin()
+      .showVideoPreview(false)
+      .showPredictionPoints(true);
+
+    // --- 3. Dot follows gaze
+    const dot = document.getElementById('dot');
+    let smoothX = window.innerWidth / 2;
+    let smoothY = window.innerHeight / 2;
+    const smoothFactor = 0.2;
+
+    window.webgazer.setGazeListener((data) => {
+      if (!data) return;
+      smoothX = smoothX * (1 - smoothFactor) + data.x * smoothFactor;
+      smoothY = smoothY * (1 - smoothFactor) + data.y * smoothFactor;
+      dot.style.left = `${smoothX - 8}px`;
+      dot.style.top  = `${smoothY - 8}px`;
+    });
+
+    // --- 4. Resize-safe
+    window.addEventListener('resize', () => {
+      video.width = window.innerWidth;
+      video.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>

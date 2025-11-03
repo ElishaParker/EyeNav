@@ -13,13 +13,14 @@ window.addEventListener('load', () => {
       webgazer.showFaceOverlay(false);
       webgazer.showFaceFeedbackBox(false);
       webgazer.showPredictionPoints(false);
+      webgazer.saveDataAcrossSessions(true); // ✅ automatic persistence
       if (webgazer.params) {
         webgazer.params.showGazeDot = false;
         webgazer.params.applyKalmanFilter = true;
       }
     });
 
-  // --- Gaze dot smoothing ---
+  // --- Gaze smoothing & dot movement ---
   webgazer.setGazeListener((data) => {
     if (!data) return;
     smoothX = smoothX * (1 - smoothFactor) + data.x * smoothFactor;
@@ -33,17 +34,14 @@ window.addEventListener('load', () => {
     smoothY = window.innerHeight / 2;
   });
 
-  // --- Calibration Logic ---
+  // --- Calibration overlay ---
   const calBtn = document.getElementById('startCal');
+  const resetBtn = document.getElementById('resetCal');
   const calBox = document.getElementById('calibration');
   const calPoints = Array.from(document.querySelectorAll('.cal-point'));
-
   const positions = [
-    {x:0.1, y:0.1}, // top-left
-    {x:0.9, y:0.1}, // top-right
-    {x:0.5, y:0.5}, // center
-    {x:0.1, y:0.9}, // bottom-left
-    {x:0.9, y:0.9}  // bottom-right
+    {x:0.1, y:0.1}, {x:0.9, y:0.1}, {x:0.5, y:0.5},
+    {x:0.1, y:0.9}, {x:0.9, y:0.9}
   ];
 
   calBtn.onclick = async () => {
@@ -59,11 +57,9 @@ window.addEventListener('load', () => {
     for (let i = 0; i < positions.length; i++) {
       const p = positions[i];
       const el = calPoints[i];
-      el.style.position = 'fixed';
       el.style.left = `${p.x * window.innerWidth - 15}px`;
       el.style.top  = `${p.y * window.innerHeight - 15}px`;
       el.classList.add('active');
-
       await collectPoint(p);
       el.classList.remove('active');
     }
@@ -71,7 +67,7 @@ window.addEventListener('load', () => {
 
   function collectPoint(p) {
     return new Promise(resolve => {
-      const duration = 1500; // ms to sample each point
+      const duration = 1500;
       const start = performance.now();
       const timer = setInterval(() => {
         const now = performance.now();
@@ -89,25 +85,9 @@ window.addEventListener('load', () => {
     });
   }
 
-  // --- Save/Load Calibration ---
-  document.getElementById('saveCal').onclick = async () => {
-    const model = await webgazer.getStoredData();
-    if (!model) {
-      alert('No calibration data found yet!');
-      return;
-    }
-    localStorage.setItem('webgazerModel', JSON.stringify(model));
-    alert('Calibration saved locally ✅');
-  };
-
-  document.getElementById('loadCal').onclick = async () => {
-    const modelStr = localStorage.getItem('webgazerModel');
-    if (!modelStr) {
-      alert('No saved calibration data found!');
-      return;
-    }
-    const model = JSON.parse(modelStr);
-    await webgazer.setStoredData(model);
-    alert('Calibration loaded ✅');
+  // --- Reset calibration manually ---
+  resetBtn.onclick = () => {
+    indexedDB.deleteDatabase('webgazer');
+    alert('Calibration reset – you can recalibrate now.');
   };
 });

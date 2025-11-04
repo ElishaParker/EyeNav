@@ -1,8 +1,8 @@
 window.addEventListener('load', () => {
   const dot = document.getElementById('dot');
-  let smoothX = window.innerWidth / 2;
-  let smoothY = window.innerHeight / 2;
-  const smoothFactor = 0.2;
+  let smoothX = window.innerWidth / 1.5;
+  let smoothY = window.innerHeight / 1.5;
+  const smoothFactor = 0.5;
 
   // --- Initialize WebGazer ---
   webgazer.setRegression('ridge')
@@ -28,8 +28,8 @@ window.addEventListener('load', () => {
     data.y -= window.innerHeight / 2;
 
   // Optional scaling (tune if needed)
-    const scaleX = 1.0;
-    const scaleY = 1.0;
+    const scaleX = 1.5;
+    const scaleY = 1.5;
 
   // Shift back into screen space
     data.x = window.innerWidth / 2 + data.x * scaleX;

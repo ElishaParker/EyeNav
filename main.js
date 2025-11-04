@@ -57,35 +57,40 @@ async function runTracking() {
   const rightEye  = lm[263];
   const leftIris  = lm[468];
   const rightIris = lm[473];
+  const topEyelid = lm[159];   // upper lid landmark
+  const bottomEyelid = lm[145]; // lower lid landmark
 
-  // --- Compute eye and iris centers
+  // --- Compute centers
   const faceCenter = {
     x: (leftEye.x + rightEye.x) / 2,
     y: (leftEye.y + rightEye.y) / 2
   };
-
   const irisCenter = {
     x: (leftIris.x + rightIris.x) / 2,
     y: (leftIris.y + rightIris.y) / 2
   };
 
-  // --- Pure pupil-relative offsets
-  const offsetX = (irisCenter.x - faceCenter.x);
-  const offsetY = (irisCenter.y - faceCenter.y);
+  // --- Base offsets
+  const offsetX = irisCenter.x - faceCenter.x;
 
-  // --- Amplified motion mapping
-  const gain = 40000; // 🔧 try 1500–4000 for tuning
+  // --- Compute vertical offset using eyelid–iris ratio
+  const eyeOpenDist = bottomEyelid.y - topEyelid.y;       // eyelid spacing
+  const irisOffsetY = (irisCenter.y - topEyelid.y) / eyeOpenDist - 0.5; // normalize 0–1 -> -0.5–0.5
+  const offsetY = irisOffsetY * 2.0; // scale to match X range
 
-  let x = window.innerWidth  / 2  - offsetX * gain;
-  let y = window.innerHeight / 2 + offsetY * gain;
+  // --- Apply gains
+  const gainX = 40000; // horizontal boost
+  const gainY = 70000; // vertical boost (stronger for equal feel)
 
-  // --- Smooth and clamp
+  let x = window.innerWidth  / 2 - offsetX * gainX;
+  let y = window.innerHeight / 2 + offsetY * gainY;
+
+  // --- Smooth & clamp
   smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;
   smooth.y = smooth.y * (1 - smoothFactor) + y * smoothFactor;
   smooth.x = Math.max(0, Math.min(window.innerWidth,  smooth.x));
   smooth.y = Math.max(0, Math.min(window.innerHeight, smooth.y));
 
-  // --- Draw
   dot.style.left = `${smooth.x}px`;
   dot.style.top  = `${smooth.y}px`;
 

@@ -41,7 +41,7 @@ async function init() {
 
 // --- Tracking loop -----------------------------------------------------------
 const smooth = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-const smoothFactor = 0.01;
+const smoothFactor = 0.02;
 
 async function runTracking() {
   if (!faceLandmarker) return;
@@ -80,7 +80,7 @@ async function runTracking() {
 
   // Map to screen space (invert X)
   let x = window.innerWidth  * (0.503 - correctedX);
-  let y = window.innerHeight * (0.593 + correctedY);
+  let y = window.innerHeight * (0.587 + correctedY);
 
 
   // --- 🔧 Global amplification multiplier ---

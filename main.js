@@ -82,6 +82,11 @@ async function runTracking() {
   let x = window.innerWidth  * (0.5 - correctedX);
   let y = window.innerHeight * (0.5 + correctedY);
 
+  // --- 🔧 Global amplification multiplier ---
+const scaleBoost = 3.0; // increase if still confined; try 3–5
+x = window.innerWidth  / 2 + (x - window.innerWidth  / 2) * scaleBoost;
+y = window.innerHeight / 2 + (y - window.innerHeight / 2) * scaleBoost;
+
   // Smooth + clamp
   smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;
   smooth.y = smooth.y * (1 - smoothFactor) + y * smoothFactor;

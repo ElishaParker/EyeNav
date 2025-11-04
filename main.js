@@ -41,7 +41,7 @@ async function init() {
 
 // --- Tracking loop -----------------------------------------------------------
 const smooth = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-const smoothFactor = 0.5;
+const smoothFactor = 0.1;
 
 async function runTracking() {
   if (!faceLandmarker) return;
@@ -73,7 +73,7 @@ async function runTracking() {
   const offsetY = (irisAvg.y - faceCenter.y);
 
   // Apply nonlinear gain to expand small eye movements
-  const gainX = 50.0;   // boost horizontal motion
+  const gainX = 30.0;   // boost horizontal motion
   const gainY = 50.0;   // boost vertical motion
   const correctedX = offsetX * gainX;
   const correctedY = offsetY * gainY;
@@ -83,7 +83,7 @@ async function runTracking() {
   let y = window.innerHeight * (0.5 + correctedY);
 
   // --- 🔧 Global amplification multiplier ---
-const scaleBoost = 5.0; // increase if still confined; try 3–5
+const scaleBoost = 4.0; // increase if still confined; try 3–5
 x = window.innerWidth  / 2 + (x - window.innerWidth  / 2) * scaleBoost;
 y = window.innerHeight / 2 + (y - window.innerHeight / 2) * scaleBoost;
 

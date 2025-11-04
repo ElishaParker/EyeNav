@@ -21,21 +21,34 @@ window.addEventListener('load', () => {
     });
 
   // --- Gaze smoothing & dot movement ---
+  // --- Gaze smoothing & dot movement ---
   webgazer.setGazeListener((data) => {
     if (!data) return;
+
+  // Mirror horizontally (camera flip)
     data.x = window.innerWidth - data.x;
+
+  // Invert vertical axis (so up = up)
+    data.y = window.innerHeight - data.y;
+
+  // Shift origin from top-left to center
     data.x -= window.innerWidth / 2;
     data.y -= window.innerHeight / 2;
 
-  // Optional scaling (tune if needed)
-    const scaleX = 1.5;
-    const scaleY = 1.5;
+  // Scaling and offset correction (manually tuned)
+    const scaleX = 1.4;   // widen horizontal range
+    const scaleY = 1.2;   // compress vertical slightly
+    const offsetX = -180; // move dot left
+    const offsetY = -120; // move dot up
 
-  // Shift back into screen space
-    data.x = window.innerWidth / 2 + data.x * scaleX;
-    data.y = window.innerHeight / 2 + data.y * scaleY;
+  // Re-map to screen coordinates
+    data.x = window.innerWidth / 2 + data.x * scaleX + offsetX;
+    data.y = window.innerHeight / 2 + data.y * scaleY + offsetY;
+
+  // Smooth motion
     smoothX = smoothX * (1 - smoothFactor) + data.x * smoothFactor;
     smoothY = smoothY * (1 - smoothFactor) + data.y * smoothFactor;
+
     dot.style.left = `${smoothX - 8}px`;
     dot.style.top  = `${smoothY - 8}px`;
   });
@@ -44,6 +57,7 @@ window.addEventListener('load', () => {
     smoothX = window.innerWidth / 2;
     smoothY = window.innerHeight / 2;
   });
+
 
   // --- Calibration overlay setup ---
   const calBtn = document.getElementById('startCal');

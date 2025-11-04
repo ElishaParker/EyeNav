@@ -9,9 +9,10 @@ const status = document.getElementById("status");
 
 let faceLandmarker;
 
-// -----------------------------------------------------------------------------
-// INIT
-// -----------------------------------------------------------------------------
+// --- Select mode here --------------------------------------------------------
+const MODE = "B"; // "A" = basic Y boost, "B" = head-pitch enhanced
+
+// --- Init --------------------------------------------------------------------
 async function init() {
   try {
     status.textContent = "Loading model...";
@@ -29,12 +30,11 @@ async function init() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
 
-    // wait for valid frame dimensions
     await new Promise((resolve) => {
       video.onloadedmetadata = () => { video.play(); resolve(); };
     });
 
-    status.textContent = "Tracking active — move your eyes 👁️";
+    status.textContent = "Tracking active — move eyes and head 👁️";
     runTracking();
   } catch (err) {
     console.error(err);
@@ -42,9 +42,7 @@ async function init() {
   }
 }
 
-// -----------------------------------------------------------------------------
-// TRACKING LOOP
-// -----------------------------------------------------------------------------
+// --- Tracking loop -----------------------------------------------------------
 const smooth = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 const smoothFactor = 0.25;
 
@@ -64,7 +62,7 @@ async function runTracking() {
   const leftIris  = lm[468];
   const rightIris = lm[473];
 
-  // --- 1. Compute head pose (face normal)
+  // 1️⃣ Head center and direction
   const faceCenter = {
     x: (leftEye.x + rightEye.x) / 2,
     y: (leftEye.y + rightEye.y) / 2,
@@ -76,7 +74,7 @@ async function runTracking() {
     z: noseTip.z - faceCenter.z
   };
 
-  // --- 2. Compute average iris offset
+  // 2️⃣ Iris offset
   const irisAvg = {
     x: (leftIris.x + rightIris.x) / 2,
     y: (leftIris.y + rightIris.y) / 2,
@@ -88,18 +86,28 @@ async function runTracking() {
     z: irisAvg.z - faceCenter.z
   };
 
-  // --- 3. Combine head direction and eye offset to approximate gaze vector
+  // 3️⃣ Combine into gaze vector
   const gazeVec = {
     x: faceDir.x + eyeOffset.x * 3.0,
     y: faceDir.y + eyeOffset.y * 3.0,
     z: faceDir.z + eyeOffset.z * 3.0
   };
 
-  // --- 4. Map to screen coordinates
-  let x = (0.5 - gazeVec.x) * window.innerWidth;
-  let y = (0.5 + gazeVec.y) * window.innerHeight;
+  // 4️⃣ Convert to screen coordinates
+  let x, y;
 
-  // --- 5. Smooth and clamp
+  if (MODE === "A") {
+    // --- Option A: simple vertical amplification
+    x = (0.5 - gazeVec.x) * window.innerWidth;
+    y = (0.5 + gazeVec.y * 4.5) * window.innerHeight; // ← adjust multiplier
+  } else {
+    // --- Option B: add head-pitch awareness
+    const pitch = (noseTip.y - faceCenter.y) * 4.0; // face tilt factor
+    x = (0.5 - gazeVec.x) * window.innerWidth;
+    y = (0.5 + (gazeVec.y + pitch) * 3.0) * window.innerHeight;
+  }
+
+  // 5️⃣ Smooth and clamp
   smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;
   smooth.y = smooth.y * (1 - smoothFactor) + y * smoothFactor;
   smooth.x = Math.max(0, Math.min(window.innerWidth,  smooth.x));
@@ -111,13 +119,11 @@ async function runTracking() {
   requestAnimationFrame(runTracking);
 }
 
-// -----------------------------------------------------------------------------
-// UTILITIES
-// -----------------------------------------------------------------------------
+// --- Resize handler ----------------------------------------------------------
 window.addEventListener("resize", () => {
   smooth.x = window.innerWidth / 2;
   smooth.y = window.innerHeight / 2;
 });
 
-// Launch
+// --- Launch ------------------------------------------------------------------
 init();

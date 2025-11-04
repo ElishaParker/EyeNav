@@ -9,7 +9,7 @@ const status = document.getElementById("status");
 
 let faceLandmarker;
 
-// --- Init --------------------------------------------------------------------
+// --- Initialize --------------------------------------------------------------
 async function init() {
   try {
     status.textContent = "Loading model...";
@@ -27,7 +27,7 @@ async function init() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
 
-    await new Promise((resolve) => {
+    await new Promise(resolve => {
       video.onloadedmetadata = () => { video.play(); resolve(); };
     });
 
@@ -53,39 +53,36 @@ async function runTracking() {
   }
 
   const lm = res.faceLandmarks[0];
+  const noseTip   = lm[1];
   const leftEye   = lm[33];
   const rightEye  = lm[263];
   const leftIris  = lm[468];
   const rightIris = lm[473];
-  const topEyelid = lm[159];   // upper lid landmark
-  const bottomEyelid = lm[145]; // lower lid landmark
 
-  // --- Compute centers
   const faceCenter = {
     x: (leftEye.x + rightEye.x) / 2,
-    y: (leftEye.y + rightEye.y) / 2
+    y: (leftEye.y + rightEye.y) / 2,
   };
-  const irisCenter = {
+  const irisAvg = {
     x: (leftIris.x + rightIris.x) / 2,
-    y: (leftIris.y + rightIris.y) / 2
+    y: (leftIris.y + rightIris.y) / 2,
   };
 
-  // --- Base offsets
-  const offsetX = irisCenter.x - faceCenter.x;
+  // Offsets: normalized differences (centered around 0)
+  const offsetX = (irisAvg.x - faceCenter.x);
+  const offsetY = (irisAvg.y - faceCenter.y);
 
-  // --- Compute vertical offset using eyelid–iris ratio
-  const eyeOpenDist = bottomEyelid.y - topEyelid.y;       // eyelid spacing
-  const irisOffsetY = (irisCenter.y - topEyelid.y) / eyeOpenDist - 0.5; // normalize 0–1 -> -0.5–0.5
-  const offsetY = irisOffsetY * 2.0; // scale to match X range
+  // Apply nonlinear gain to expand small eye movements
+  const gainX = 4.0;   // boost horizontal motion
+  const gainY = 8.0;   // boost vertical motion
+  const correctedX = offsetX * gainX;
+  const correctedY = offsetY * gainY;
 
-  // --- Apply gains
-  const gainX = 40000; // horizontal boost
-  const gainY = 70000; // vertical boost (stronger for equal feel)
+  // Map to screen space (invert X)
+  let x = window.innerWidth  * (0.5 - correctedX);
+  let y = window.innerHeight * (0.5 + correctedY);
 
-  let x = window.innerWidth  / 2 - offsetX * gainX;
-  let y = window.innerHeight / 2 + offsetY * gainY;
-
-  // --- Smooth & clamp
+  // Smooth + clamp
   smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;
   smooth.y = smooth.y * (1 - smoothFactor) + y * smoothFactor;
   smooth.x = Math.max(0, Math.min(window.innerWidth,  smooth.x));

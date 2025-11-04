@@ -70,15 +70,12 @@ async function runTracking() {
   };
 
   // --- Pure pupil-relative offsets
-  const offsetX = (irisCenter.x - faceCenter.x);
-  const offsetY = (irisCenter.y - faceCenter.y);
+  // --- Enhanced scaling for visible motion
+  // Nonlinear gain curve for natural eye motion
+  const gain = 2200; // boost this if still too subtle (try 1500–4000)
 
-  // --- Equalized scaling for both axes
-  const scaleX = 6.0; // increase for stronger horizontal motion
-  const scaleY = 6.0; // increase for stronger vertical motion
-
-  let x = window.innerWidth  * (0.5 - offsetX * scaleX);
-  let y = window.innerHeight * (0.5 + offsetY * scaleY);
+  let x = window.innerWidth  / 2  - offsetX * gain;
+  let y = window.innerHeight / 2 + offsetY * gain;
 
   // --- Smooth and clamp
   smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;

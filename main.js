@@ -74,13 +74,13 @@ async function runTracking() {
 
   // Apply nonlinear gain to expand small eye movements
   const gainX = 30.0;   // boost horizontal motion
-  const gainY = 50.0;   // boost vertical motion
+  const gainY = 30.0;   // boost vertical motion
   const correctedX = offsetX * gainX;
   const correctedY = offsetY * gainY;
 
   // Map to screen space (invert X)
   let x = window.innerWidth  * (0.5 - correctedX);
-  let y = window.innerHeight * (0.3 + correctedY);
+  let y = window.innerHeight * (1.0 + correctedY);
 
 
   // --- 🔧 Global amplification multiplier ---

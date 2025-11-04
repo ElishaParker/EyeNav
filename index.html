@@ -2,18 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EyeNav – Auto-Save Calibration</title>
+  <title>Eye Tracker — FaceMesh + Iris</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     html, body {
       margin: 0; padding: 0;
       width: 100vw; height: 100vh;
-      background: black; overflow: hidden;
-      font-family: system-ui, sans-serif;
+      overflow: hidden; background: black;
     }
-
-    /* gaze dot */
+    video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      transform: scaleX(-1);
+      filter: brightness(1.2) contrast(1.2);
+      z-index: -1;
+    }
     #dot {
       position: fixed;
       width: 16px; height: 16px;
@@ -24,52 +29,13 @@
       left: 50%; top: 50%;
       transform: translate(-50%, -50%);
     }
-
-    /* calibration overlay */
-    #calibration {
-      position: fixed; inset: 0;
-      display: flex; justify-content: center; align-items: center;
-      flex-wrap: wrap; gap: 15vh;
-      background: rgba(0,0,0,0.8);
-      z-index: 10; visibility: hidden;
-    }
-
-    .cal-point {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: cyan; opacity: 0.8;
-      transition: transform 0.2s, opacity 0.2s;
-    }
-    .cal-point.active { transform: scale(1.6); opacity: 1; }
-
-    /* controls */
-    #startCal, #resetCal {
-      position: fixed; bottom: 20px;
-      background: cyan; color: black;
-      padding: 10px 20px; font-size: 16px;
-      border: none; border-radius: 10px;
-      z-index: 20; cursor: pointer;
-    }
-    #startCal { left: 20px; }
-    #resetCal { left: 170px; }
   </style>
-
-  <script src="https://cdn.jsdelivr.net/npm/webgazer/dist/webgazer.min.js"></script>
-  <script src="main.js" defer></script>
 </head>
-
 <body>
+  <video id="videoFeed" autoplay playsinline></video>
   <div id="dot"></div>
 
-  <!-- calibration overlay -->
-  <div id="calibration">
-    <div class="cal-point" data-pos="0"></div>
-    <div class="cal-point" data-pos="1"></div>
-    <div class="cal-point" data-pos="2"></div>
-    <div class="cal-point" data-pos="3"></div>
-    <div class="cal-point" data-pos="4"></div>
-  </div>
-
-  <button id="startCal">Start Calibration</button>
-  <button id="resetCal">Reset Calibration</button>
+  <!-- load our logic -->
+  <script type="module" src="main.js"></script>
 </body>
 </html>

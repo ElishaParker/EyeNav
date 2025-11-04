@@ -70,9 +70,11 @@ async function runTracking() {
   };
 
   // --- Pure pupil-relative offsets
-  // --- Enhanced scaling for visible motion
-  // Nonlinear gain curve for natural eye motion
-  const gain = 2200; // boost this if still too subtle (try 1500–4000)
+  const offsetX = (irisCenter.x - faceCenter.x);
+  const offsetY = (irisCenter.y - faceCenter.y);
+
+  // --- Amplified motion mapping
+  const gain = 2500; // 🔧 try 1500–4000 for tuning
 
   let x = window.innerWidth  / 2  - offsetX * gain;
   let y = window.innerHeight / 2 + offsetY * gain;

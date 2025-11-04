@@ -82,6 +82,15 @@ async function runTracking() {
   let x = window.innerWidth  * (0.5 - correctedX);
   let y = window.innerHeight * (0.5 + correctedY);
 
+  // added section below Adjust resting center and asymmetry
+const verticalBias = 0.02;   // positive = move dot down; negative = up
+const downScale    = 1.3;    // increase if looking down feels unresponsive
+
+// Apply mapping
+let x = window.innerWidth  / 2 - offsetX * gainX;
+let y = window.innerHeight / 2 + (offsetY + verticalBias) * gainY * downScale;
+//added section above
+
   // --- 🔧 Global amplification multiplier ---
 const scaleBoost = 4.0; // increase if still confined; try 3–5
 x = window.innerWidth  / 2 + (x - window.innerWidth  / 2) * scaleBoost;

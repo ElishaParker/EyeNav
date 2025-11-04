@@ -1,24 +1,38 @@
+//
 window.addEventListener('load', () => {
   const dot = document.getElementById('dot');
-  let smoothX = window.innerWidth / 1.5;
-  let smoothY = window.innerHeight / 1.5;
-  const smoothFactor = 0.5;
+
+  // Start centered on load
+  let smoothX = window.innerWidth / 2;
+  let smoothY = window.innerHeight / 2;
+  const smoothFactor = 0.4; // smaller = smoother, larger = more responsive
 
   // --- Initialize WebGazer ---
   webgazer.setRegression('ridge')
     .setTracker('clmtrackr')
     .begin()
     .then(() => {
+      // Disable all built-in visuals
       webgazer.showVideo(false);
       webgazer.showFaceOverlay(false);
       webgazer.showFaceFeedbackBox(false);
       webgazer.showPredictionPoints(false);
-      webgazer.saveDataAcrossSessions(true); // auto persist calibration
+
+      // Auto-save calibration for persistence
+      webgazer.saveDataAcrossSessions(true);
+
+      // Disable internal gaze dot and apply smoother Kalman filter
       if (webgazer.params) {
         webgazer.params.showGazeDot = false;
         webgazer.params.applyKalmanFilter = true;
       }
     });
+
+  // --- Resize-safe recentering ---
+  window.addEventListener('resize', () => {
+    smoothX = window.innerWidth / 2;
+    smoothY = window.innerHeight / 2;
+  });
 
   // --- Gaze smoothing & dot movement ---
   // --- Gaze smoothing & dot movement ---
@@ -36,10 +50,10 @@ window.addEventListener('load', () => {
     data.y -= window.innerHeight / 2;
 
   // Scaling and offset correction (manually tuned)
-    const scaleX = 1.4;   // widen horizontal range
-    const scaleY = 1.2;   // compress vertical slightly
-    const offsetX = -180; // move dot left
-    const offsetY = -120; // move dot up
+    const scaleX = 1.0;   // widen horizontal range
+    const scaleY = 1.0;   // compress vertical slightly
+    const offsetX = -220; // move dot left
+    const offsetY = -160; // move dot up
 
   // Re-map to screen coordinates
     data.x = window.innerWidth / 2 + data.x * scaleX + offsetX;

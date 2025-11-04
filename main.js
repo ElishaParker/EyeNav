@@ -1,139 +1,65 @@
-//
-window.addEventListener('load', () => {
-  const dot = document.getElementById('dot');
+import {
+  FaceLandmarker,
+  FilesetResolver
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
 
-  // Start centered on load
-  let smoothX = window.innerWidth / 2;
-  let smoothY = window.innerHeight / 2;
-  const smoothFactor = 0.4; // smaller = smoother, larger = more responsive
+const video = document.getElementById("videoFeed");
+const dot   = document.getElementById("dot");
 
-  // --- Initialize WebGazer ---
-  webgazer.setRegression('ridge')
-    .setTracker('clmtrackr')
-    .begin()
-    .then(() => {
-      // Disable all built-in visuals
-      webgazer.showVideo(false);
-      webgazer.showFaceOverlay(false);
-      webgazer.showFaceFeedbackBox(false);
-      webgazer.showPredictionPoints(false);
+// 1. Load the FaceMesh + Iris model
+const vision = await FilesetResolver.forVisionTasks(
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+);
 
-      // Auto-save calibration for persistence
-      webgazer.saveDataAcrossSessions(true);
+const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+  baseOptions: {
+    modelAssetPath:
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/models/face_landmarker.task"
+  },
+  outputFaceBlendshapes: false,
+  runningMode: "VIDEO",
+  numFaces: 1
+});
 
-      // Disable internal gaze dot and apply smoother Kalman filter
-      if (webgazer.params) {
-        webgazer.params.showGazeDot = false;
-        webgazer.params.applyKalmanFilter = true;
-      }
-    });
+// 2. Start webcam
+const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+video.srcObject = stream;
 
-  // --- Resize-safe recentering ---
-  window.addEventListener('resize', () => {
-    smoothX = window.innerWidth / 2;
-    smoothY = window.innerHeight / 2;
-  });
+// 3. Tracking loop
+const smooth = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+const smoothFactor = 0.2; // adjust for speed vs stability
 
-  // --- Gaze smoothing & dot movement ---
-  // --- Gaze smoothing & dot movement ---
-  webgazer.setGazeListener((data) => {
-    if (!data) return;
+async function processFrame() {
+  const res = await faceLandmarker.detectForVideo(video, performance.now());
+  if (res.faceLandmarks.length) {
+    const lm = res.faceLandmarks[0];
+    const leftIris  = lm[468];
+    const rightIris = lm[473];
 
-  // Mirror horizontally (camera flip)
-    data.x = window.innerWidth - data.x;
+    if (leftIris && rightIris) {
+      const cx = (leftIris.x + rightIris.x) / 2;
+      const cy = (leftIris.y + rightIris.y) / 2;
 
-  // Invert vertical axis (so up = up)
-    data.y = window.innerHeight - data.y;
+      // convert normalized 0–1 → pixels, mirror horizontally
+      let x = (1 - cx) * window.innerWidth;
+      let y = cy * window.innerHeight;
 
-  // Shift origin from top-left to center
-    data.x -= window.innerWidth / 2;
-    data.y -= window.innerHeight / 2;
+      // smooth and clamp
+      smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;
+      smooth.y = smooth.y * (1 - smoothFactor) + y * smoothFactor;
+      smooth.x = Math.max(0, Math.min(window.innerWidth,  smooth.x));
+      smooth.y = Math.max(0, Math.min(window.innerHeight, smooth.y));
 
-  // Scaling and offset correction (manually tuned)
-    const scaleX = 1.0;   // widen horizontal range
-    const scaleY = 0.8;   // compress vertical slightly
-    const offsetX = -220; // move dot left
-    const offsetY = -320; // move dot up
-
-  // Re-map to screen coordinates
-    data.x = window.innerWidth / 2 + data.x * scaleX + offsetX;
-    data.y = window.innerHeight / 2 + data.y * scaleY + offsetY;
-
-  // Smooth motion
-    smoothX = smoothX * (1 - smoothFactor) + data.x * smoothFactor;
-    smoothY = smoothY * (1 - smoothFactor) + data.y * smoothFactor;
-
-    dot.style.left = `${smoothX - 8}px`;
-    dot.style.top  = `${smoothY - 8}px`;
-  });
-
-  window.addEventListener('resize', () => {
-    smoothX = window.innerWidth / 2;
-    smoothY = window.innerHeight / 2;
-  });
-
-
-  // --- Calibration overlay setup ---
-  const calBtn = document.getElementById('startCal');
-  const resetBtn = document.getElementById('resetCal');
-  const calBox = document.getElementById('calibration');
-  const calPoints = Array.from(document.querySelectorAll('.cal-point'));
-  const positions = [
-    {x:0.1, y:0.1}, {x:0.9, y:0.1}, {x:0.5, y:0.5},
-    {x:0.1, y:0.9}, {x:0.9, y:0.9}
-  ];
-
-  calBtn.onclick = async () => {
-    calBtn.style.visibility = 'hidden';
-    calBox.style.visibility = 'visible';
-    await runCalibration();
-    calBox.style.visibility = 'hidden';
-    calBtn.style.visibility = 'visible';
-
-    // 🔧 force model retraining after full calibration
-    webgazer.train();
-
-    alert('Calibration complete ✅');
-  };
-
-  async function runCalibration() {
-    for (let i = 0; i < positions.length; i++) {
-      const p = positions[i];
-      const el = calPoints[i];
-      el.style.left = `${p.x * window.innerWidth - 15}px`;
-      el.style.top  = `${p.y * window.innerHeight - 15}px`;
-      el.classList.add('active');
-
-      await collectPoint(p);
-      el.classList.remove('active');
+      dot.style.left = `${smooth.x}px`;
+      dot.style.top  = `${smooth.y}px`;
     }
   }
+  requestAnimationFrame(processFrame);
+}
+processFrame();
 
-  function collectPoint(p) {
-    return new Promise(resolve => {
-      const duration = 1500; // ms to sample each point
-      const start = performance.now();
-      const timer = setInterval(() => {
-        const now = performance.now();
-        if (now - start > duration) {
-          clearInterval(timer);
-          // 🔧 retrain the model after each calibration point
-          webgazer.train();
-          resolve();
-        } else {
-          webgazer.recordScreenPosition(
-            p.x * window.innerWidth,
-            p.y * window.innerHeight,
-            'cal'
-          );
-        }
-      }, 100);
-    });
-  }
-
-  // --- Reset calibration manually ---
-  resetBtn.onclick = () => {
-    indexedDB.deleteDatabase('webgazer');
-    alert('Calibration reset – you can recalibrate now.');
-  };
+// 4. Keep centered on resize
+window.addEventListener("resize", () => {
+  smooth.x = window.innerWidth / 2;
+  smooth.y = window.innerHeight / 2;
 });

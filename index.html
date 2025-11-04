@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Eye Tracker — FaceMesh + Iris</title>
+  <title>EyeNav — FaceMesh + Iris Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     html, body {
@@ -10,15 +10,17 @@
       width: 100vw; height: 100vh;
       overflow: hidden; background: black;
     }
+
     video {
       position: fixed;
       top: 0; left: 0;
       width: 100vw; height: 100vh;
       object-fit: cover;
-      transform: scaleX(-1);
+      transform: scaleX(-1);  /* Mirror horizontally for natural movement */
       filter: brightness(1.2) contrast(1.2);
       z-index: -1;
     }
+
     #dot {
       position: fixed;
       width: 16px; height: 16px;
@@ -29,13 +31,23 @@
       left: 50%; top: 50%;
       transform: translate(-50%, -50%);
     }
+
+    #status {
+      position: fixed;
+      bottom: 10px; left: 10px;
+      color: cyan; font-family: monospace;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 4px 8px; border-radius: 8px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <video id="videoFeed" autoplay playsinline></video>
   <div id="dot"></div>
+  <div id="status">Loading model...</div>
 
-  <!-- load our logic -->
+  <!-- main logic -->
   <script type="module" src="main.js"></script>
 </body>
 </html>

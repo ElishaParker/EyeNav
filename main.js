@@ -9,9 +9,6 @@ const status = document.getElementById("status");
 
 let faceLandmarker;
 
-// --- Select mode here --------------------------------------------------------
-const MODE = "B"; // "A" = basic Y boost, "B" = head-pitch enhanced
-
 // --- Init --------------------------------------------------------------------
 async function init() {
   try {
@@ -34,7 +31,7 @@ async function init() {
       video.onloadedmetadata = () => { video.play(); resolve(); };
     });
 
-    status.textContent = "Tracking active — move eyes and head 👁️";
+    status.textContent = "Tracking active — move only your eyes 👁️";
     runTracking();
   } catch (err) {
     console.error(err);
@@ -56,63 +53,40 @@ async function runTracking() {
   }
 
   const lm = res.faceLandmarks[0];
-  const noseTip   = lm[1];
   const leftEye   = lm[33];
   const rightEye  = lm[263];
   const leftIris  = lm[468];
   const rightIris = lm[473];
 
-  // 1️⃣ Head center and direction
+  // --- Compute eye and iris centers
   const faceCenter = {
     x: (leftEye.x + rightEye.x) / 2,
-    y: (leftEye.y + rightEye.y) / 2,
-    z: (leftEye.z + rightEye.z) / 2
-  };
-  const faceDir = {
-    x: noseTip.x - faceCenter.x,
-    y: noseTip.y - faceCenter.y,
-    z: noseTip.z - faceCenter.z
+    y: (leftEye.y + rightEye.y) / 2
   };
 
-  // 2️⃣ Iris offset
-  const irisAvg = {
+  const irisCenter = {
     x: (leftIris.x + rightIris.x) / 2,
-    y: (leftIris.y + rightIris.y) / 2,
-    z: (leftIris.z + rightIris.z) / 2
-  };
-  const eyeOffset = {
-    x: irisAvg.x - faceCenter.x,
-    y: irisAvg.y - faceCenter.y,
-    z: irisAvg.z - faceCenter.z
+    y: (leftIris.y + rightIris.y) / 2
   };
 
-  // 3️⃣ Combine into gaze vector
-  const gazeVec = {
-    x: faceDir.x + eyeOffset.x * 3.0,
-    y: faceDir.y + eyeOffset.y * 3.0,
-    z: faceDir.z + eyeOffset.z * 3.0
-  };
+  // --- Pure pupil-relative offsets
+  const offsetX = (irisCenter.x - faceCenter.x);
+  const offsetY = (irisCenter.y - faceCenter.y);
 
-  // 4️⃣ Convert to screen coordinates
-  let x, y;
+  // --- Equalized scaling for both axes
+  const scaleX = 6.0; // increase for stronger horizontal motion
+  const scaleY = 6.0; // increase for stronger vertical motion
 
-  if (MODE === "A") {
-    // --- Option A: simple vertical amplification
-    x = (0.5 - gazeVec.x) * window.innerWidth;
-    y = (0.5 + gazeVec.y * 4.5) * window.innerHeight; // ← adjust multiplier
-  } else {
-    // --- Option B: add head-pitch awareness
-    const pitch = (noseTip.y - faceCenter.y) * 4.0; // face tilt factor
-    x = (0.5 - gazeVec.x) * window.innerWidth;
-    y = (0.5 + (gazeVec.y + pitch) * 3.0) * window.innerHeight;
-  }
+  let x = window.innerWidth  * (0.5 - offsetX * scaleX);
+  let y = window.innerHeight * (0.5 + offsetY * scaleY);
 
-  // 5️⃣ Smooth and clamp
+  // --- Smooth and clamp
   smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;
   smooth.y = smooth.y * (1 - smoothFactor) + y * smoothFactor;
   smooth.x = Math.max(0, Math.min(window.innerWidth,  smooth.x));
   smooth.y = Math.max(0, Math.min(window.innerHeight, smooth.y));
 
+  // --- Draw
   dot.style.left = `${smooth.x}px`;
   dot.style.top  = `${smooth.y}px`;
 

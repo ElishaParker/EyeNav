@@ -84,4 +84,39 @@ window.addEventListener("resize", () => {
 });
 
 // --- Launch ------------------------------------------------------------------
+async function init() {
+  try {
+    status.textContent = "Loading MediaPipe model...";
+
+    const vision = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+    );
+
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: "./face_landmarker.task" },
+      outputFaceBlendshapes: false,
+      runningMode: "VIDEO",
+      numFaces: 1
+    });
+
+    // Start webcam
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+
+    // 🟢 Wait for camera to actually have dimensions before processing
+    await new Promise((resolve) => {
+      video.onloadedmetadata = () => {
+        video.play();
+        resolve();
+      };
+    });
+
+    status.textContent = "Tracking active — look around 👁️";
+    runTracking();
+  } catch (err) {
+    console.error("Initialization error:", err);
+    status.textContent = "Error loading model or webcam access.";
+  }
+}
+
 init();

@@ -74,7 +74,7 @@ async function runTracking() {
   const offsetY = (irisCenter.y - faceCenter.y);
 
   // --- Amplified motion mapping
-  const gain = 4000; // 🔧 try 1500–4000 for tuning
+  const gain = 40000; // 🔧 try 1500–4000 for tuning
 
   let x = window.innerWidth  / 2  - offsetX * gain;
   let y = window.innerHeight / 2 + offsetY * gain;

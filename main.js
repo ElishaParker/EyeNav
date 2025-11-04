@@ -14,7 +14,9 @@ const vision = await FilesetResolver.forVisionTasks(
 const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
   baseOptions: {
     modelAssetPath:
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/models/face_landmarker.task"
+      modelAssetPath:
+       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/face_landmarker.task"
+
   },
   outputFaceBlendshapes: false,
   runningMode: "VIDEO",

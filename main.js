@@ -9,37 +9,6 @@ const status = document.getElementById("status");
 
 let faceLandmarker;
 
-// --- Initialize --------------------------------------------------------------
-async function init() {
-  try {
-    status.textContent = "Loading MediaPipe model...";
-
-    // Load WASM and create FaceLandmarker instance
-    const vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-    );
-
-    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: "./face_landmarker.task", // local file in same folder
-      },
-      outputFaceBlendshapes: false,
-      runningMode: "VIDEO",
-      numFaces: 1
-    });
-
-    // Start webcam
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-
-    status.textContent = "Tracking active — look around 👁️";
-    runTracking();
-  } catch (err) {
-    console.error("Initialization error:", err);
-    status.textContent = "Error loading model or webcam access.";
-  }
-}
-
 // --- Tracking loop -----------------------------------------------------------
 const smooth = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 const smoothFactor = 0.2; // lower = smoother
@@ -83,7 +52,7 @@ window.addEventListener("resize", () => {
   smooth.y = window.innerHeight / 2;
 });
 
-// --- Launch ------------------------------------------------------------------
+// --- Initialize --------------------------------------------------------------
 async function init() {
   try {
     status.textContent = "Loading MediaPipe model...";
@@ -103,7 +72,7 @@ async function init() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
 
-    // 🟢 Wait for camera to actually have dimensions before processing
+    // 🟢 Wait until camera has valid dimensions
     await new Promise((resolve) => {
       video.onloadedmetadata = () => {
         video.play();

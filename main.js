@@ -24,6 +24,16 @@ window.addEventListener('load', () => {
   webgazer.setGazeListener((data) => {
     if (!data) return;
     data.x = window.innerWidth - data.x;
+    data.x -= window.innerWidth / 2;
+    data.y -= window.innerHeight / 2;
+
+  // Optional scaling (tune if needed)
+    const scaleX = 1.0;
+    const scaleY = 1.0;
+
+  // Shift back into screen space
+    data.x = window.innerWidth / 2 + data.x * scaleX;
+    data.y = window.innerHeight / 2 + data.y * scaleY;
     smoothX = smoothX * (1 - smoothFactor) + data.x * smoothFactor;
     smoothY = smoothY * (1 - smoothFactor) + data.y * smoothFactor;
     dot.style.left = `${smoothX - 8}px`;

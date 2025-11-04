@@ -51,9 +51,9 @@ window.addEventListener('load', () => {
 
   // Scaling and offset correction (manually tuned)
     const scaleX = 1.0;   // widen horizontal range
-    const scaleY = 1.0;   // compress vertical slightly
+    const scaleY = 0.8;   // compress vertical slightly
     const offsetX = -220; // move dot left
-    const offsetY = -160; // move dot up
+    const offsetY = -320; // move dot up
 
   // Re-map to screen coordinates
     data.x = window.innerWidth / 2 + data.x * scaleX + offsetX;

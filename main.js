@@ -84,7 +84,7 @@ async function runTracking() {
 
 
   // --- 🔧 Global amplification multiplier ---
-const scaleBoost = 3.5.0; // increase if still confined; try 3–5
+const scaleBoost = 3.5; // increase if still confined; try 3–5
 x = window.innerWidth  / 2 + (x - window.innerWidth  / 2) * scaleBoost;
 y = window.innerHeight / 2 + (y - window.innerHeight / 2) * scaleBoost;
 

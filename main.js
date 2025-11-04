@@ -23,6 +23,7 @@ window.addEventListener('load', () => {
   // --- Gaze smoothing & dot movement ---
   webgazer.setGazeListener((data) => {
     if (!data) return;
+    data.x = window.innerWidth - data.x;
     smoothX = smoothX * (1 - smoothFactor) + data.x * smoothFactor;
     smoothY = smoothY * (1 - smoothFactor) + data.y * smoothFactor;
     dot.style.left = `${smoothX - 8}px`;

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EyeNav — FaceMesh + Iris Tracker</title>
+  <title>EyeNav 3D — Gaze Vector Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     html, body {
@@ -16,7 +16,7 @@
       top: 0; left: 0;
       width: 100vw; height: 100vh;
       object-fit: cover;
-      transform: scaleX(-1);  /* Mirror horizontally for natural movement */
+      transform: scaleX(-1); /* mirror */
       filter: brightness(1.2) contrast(1.2);
       z-index: -1;
     }
@@ -45,9 +45,8 @@
 <body>
   <video id="videoFeed" autoplay playsinline></video>
   <div id="dot"></div>
-  <div id="status">Loading model...</div>
+  <div id="status">Loading...</div>
 
-  <!-- main logic -->
   <script type="module" src="main.js"></script>
 </body>
 </html>

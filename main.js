@@ -74,7 +74,7 @@ async function runTracking() {
 
   // Apply nonlinear gain to expand small eye movements
   const gainX = 11.0;   // boost horizontal motion
-  const gainY = 33.0;   // boost vertical motion
+  const gainY = 35.0;   // boost vertical motion
   const correctedX = offsetX * gainX;
   const correctedY = offsetY * gainY;
 
@@ -84,7 +84,7 @@ async function runTracking() {
 
 
   // --- 🔧 Global amplification multiplier ---
-const scaleBoost = 3.42; // increase if still confined; try 3–5
+const scaleBoost = 3.45; // increase if still confined; try 3–5
 x = window.innerWidth  / 2 + (x - window.innerWidth  / 2) * scaleBoost;
 y = window.innerHeight / 2 + (y - window.innerHeight / 2) * scaleBoost;
 

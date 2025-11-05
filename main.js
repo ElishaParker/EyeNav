@@ -79,7 +79,7 @@ async function runTracking() {
   const correctedY = offsetY * gainY;
 
   // Map to screen space (invert X)
-  let x = window.innerWidth  * (0.51 - correctedX * 1.1);
+  let x = window.innerWidth  * (0.48 - correctedX * 1.1);
   let y = window.innerHeight * (0.49 + correctedY * 1.1);
 
 

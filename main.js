@@ -1,9 +1,3 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/main.js b/main.js
-index 7a0794c4f0e8c17775d9091ba48b323ec2774936..f9d033963f21f49d9ce94e4fba3394f69fdc1576 100644
---- a/main.js
-+++ b/main.js
-@@ -1,156 +1,449 @@
 -// main.js — diagnostic loader + original tracking logic
 +// main.js — calibrated gaze tracking with stable layout & debug panel
  import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm";

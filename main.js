@@ -79,8 +79,8 @@ async function runTracking() {
   const correctedY = offsetY * gainY;
 
   // Map to screen space (invert X)
-  let x = window.innerWidth  * (0.485 - correctedX);
-  let y = window.innerHeight * (0.522 + correctedY);
+  let x = window.innerWidth  * (0.485 - correctedX * 1.1);
+  let y = window.innerHeight * (0.522 + correctedY * 1.1);
 
 
   // --- 🔧 Global amplification multiplier ---

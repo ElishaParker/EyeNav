@@ -1,0 +1,1 @@
+// nosimd wasm js placeholder

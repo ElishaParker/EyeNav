@@ -1,0 +1,1 @@
+// wasm internal js placeholder

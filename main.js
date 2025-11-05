@@ -41,7 +41,7 @@ async function init() {
 
 // --- Tracking loop -----------------------------------------------------------
 const smooth = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-const smoothFactor = 0.08;
+const smoothFactor = 0.05;
 
 async function runTracking() {
   if (!faceLandmarker) return;
@@ -73,8 +73,8 @@ async function runTracking() {
   const offsetY = (irisAvg.y - faceCenter.y);
 
   // Apply nonlinear gain to expand small eye movements
-  const gainX = 12.5;   // boost horizontal motion
-  const gainY = 33.3;   // boost vertical motion
+  const gainX = 6.;   // boost horizontal motion
+  const gainY = 10.;   // boost vertical motion
   const correctedX = offsetX * gainX;
   const correctedY = offsetY * gainY;
 

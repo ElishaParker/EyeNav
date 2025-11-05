@@ -8,8 +8,6 @@ const dot    = document.getElementById("dot");
 const status = document.getElementById("status");
 
 let faceLandmarker;
-let baselineFaceCenter = null;
-let baselineIrisAvg = null;
 
 // --- Initialize --------------------------------------------------------------
 async function init() {
@@ -70,40 +68,26 @@ async function runTracking() {
     y: (leftIris.y + rightIris.y) / 2,
   };
 
-  // --- capture baseline once when neutral ---
-  if (!baselineFaceCenter) {
-    baselineFaceCenter = { ...faceCenter };
-    baselineIrisAvg    = { ...irisAvg };
-    console.log("Baseline captured");
-  }
+  // --- NEW: normalize so gaze is relative to screen center, not moving head ---
+  const centeredX = (irisAvg.x - faceCenter.x) - (faceCenter.x - 0.5);
+  const centeredY = (irisAvg.y - faceCenter.y) - (faceCenter.y - 0.5);
 
-  // --- compute relative deltas vs baseline ---
-  const relFace = {
-    x: faceCenter.x - baselineFaceCenter.x,
-    y: faceCenter.y - baselineFaceCenter.y
-  };
-  const relIris = {
-    x: irisAvg.x - baselineIrisAvg.x,
-    y: irisAvg.y - baselineIrisAvg.y
-  };
+  // Apply nonlinear gain to expand small eye movements
+  const gainX = 6.0;   // boost horizontal motion
+  const gainY = 6.0;   // boost vertical motion
+  const correctedX = centeredX * gainX;
+  const correctedY = centeredY * gainY;
 
-  // --- eye offset relative to neutral head ---
-  const offsetX = relIris.x - relFace.x;
-  const offsetY = relIris.y - relFace.y;
-
-  // --- same calibration values as before ---
-  const gainX = 6.0;
-  const gainY = 6.0;
-  const correctedX = offsetX * gainX;
-  const correctedY = offsetY * gainY;
-
+  // Map to screen space (invert X)
   let x = window.innerWidth  * (0.4809 - correctedX * 2.18);
   let y = window.innerHeight * (0.56 + correctedY * 7);
 
-  const scaleBoost = 3.452;
+  // --- 🔧 Global amplification multiplier ---
+  const scaleBoost = 3.452; // increase if still confined; try 3–5
   x = window.innerWidth  / 2 + (x - window.innerWidth  / 2) * scaleBoost;
   y = window.innerHeight / 2 + (y - window.innerHeight / 2) * scaleBoost;
 
+  // Smooth + clamp
   smooth.x = smooth.x * (1 - smoothFactor) + x * smoothFactor;
   smooth.y = smooth.y * (1 - smoothFactor) + y * smoothFactor;
   smooth.x = Math.max(0, Math.min(window.innerWidth,  smooth.x));

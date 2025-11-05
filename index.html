@@ -1,52 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>EyeNav 3D — Gaze Vector Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    html, body {
-      margin: 0; padding: 0;
-      width: 100vw; height: 100vh;
-      overflow: hidden; background: black;
-    }
-
-    video {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      object-fit: cover;
-      transform: scaleX(-1); /* mirror */
-      filter: brightness(1.2) contrast(1.2);
-      z-index: -1;
-    }
-
-    #dot {
-      position: fixed;
-      width: 16px; height: 16px;
-      background: cyan;
-      border-radius: 50%;
-      pointer-events: none;
-      mix-blend-mode: difference;
-      left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    #status {
-      position: fixed;
-      bottom: 10px; left: 10px;
-      color: cyan; font-family: monospace;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 4px 8px; border-radius: 8px;
-      font-size: 14px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>EyeNav 3D Gaze Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background:#000;}
+  #videoFeed{
+    position:fixed;top:0;left:0;width:100vw;height:100vh;
+    object-fit:cover;transform:scaleX(-1);filter:brightness(1.1) contrast(1.1);
+    z-index:-1;
+  }
+  #dot{
+    position:fixed;width:18px;height:18px;border-radius:50%;
+    background:cyan;mix-blend-mode:difference;pointer-events:none;
+  }
+  #status{
+    position:fixed;bottom:10px;left:10px;color:white;font-family:monospace;font-size:14px;
+  }
+  #eyeToggle{
+    position:fixed;top:10px;left:10px;z-index:10;
+  }
+</style>
 </head>
 <body>
   <video id="videoFeed" autoplay playsinline></video>
   <div id="dot"></div>
-  <div id="status">Loading...</div>
-
-  <script type="module" src="main.js"></script>
+  <div id="status">Initializing…</div>
+  <select id="eyeToggle">
+    <option value="both">Both Eyes</option>
+    <option value="left">Left Eye</option>
+    <option value="right">Right Eye</option>
+  </select>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>

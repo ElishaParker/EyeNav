@@ -1,0 +1,1 @@
+// CommonJS bundle placeholder

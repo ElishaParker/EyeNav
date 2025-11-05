@@ -1,0 +1,1 @@
+// ES module bundle placeholder

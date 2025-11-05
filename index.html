@@ -2,36 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EyeNav 3D Gaze Tracker</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EyeNav Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background:#000;}
-  #videoFeed{
-    position:fixed;top:0;left:0;width:100vw;height:100vh;
-    object-fit:cover;transform:scaleX(-1);filter:brightness(1.1) contrast(1.1);
-    z-index:-1;
+  /* --- Layout and appearance --- */
+  html, body {margin:0; padding:0; height:100%; overflow:hidden; background:#111;}
+  #videoFeed {
+    position:fixed; top:50%; left:50%;
+    transform:translate(-50%,-50%) scaleX(-1);  /* mirror like phone selfie */
+    width:640px; height:480px; object-fit:cover;
+    background:#000; border:2px solid #333;
   }
-  #dot{
-    position:fixed;width:18px;height:18px;border-radius:50%;
-    background:cyan;mix-blend-mode:difference;pointer-events:none;
+  #dot {
+    position:fixed; width:20px; height:20px;
+    border-radius:50%; background:cyan;
+    mix-blend-mode:difference; pointer-events:none;
   }
-  #status{
-    position:fixed;bottom:10px;left:10px;color:white;font-family:monospace;font-size:14px;
-  }
-  #eyeToggle{
-    position:fixed;top:10px;left:10px;z-index:10;
+  #status {
+    position:fixed; bottom:10px; left:10px;
+    color:#0ff; font-family:monospace;
   }
 </style>
 </head>
 <body>
+  <!-- 📷 Camera feed -->
   <video id="videoFeed" autoplay playsinline></video>
+
+  <!-- 🔵 Cursor dot -->
   <div id="dot"></div>
-  <div id="status">Initializing…</div>
-  <select id="eyeToggle">
-    <option value="both">Both Eyes</option>
-    <option value="left">Left Eye</option>
-    <option value="right">Right Eye</option>
-  </select>
+
+  <!-- 🧾 Status readout -->
+  <div id="status">Loading model…</div>
+
   <script type="module" src="./main.js"></script>
 </body>
 </html>

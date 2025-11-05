@@ -41,7 +41,7 @@ async function init() {
 
 // --- Tracking loop -----------------------------------------------------------
 const smooth = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-const smoothFactor = 0.04;
+const smoothFactor = 0.08;
 
 async function runTracking() {
   if (!faceLandmarker) return;

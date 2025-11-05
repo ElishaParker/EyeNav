@@ -1,6 +1,6 @@
 -// main.js — diagnostic loader + original tracking logic
 +// main.js — calibrated gaze tracking with stable layout & debug panel
- import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm";
+ import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
  
 +// DOM references ------------------------------------------------------------
  const video = document.getElementById("videoFeed");

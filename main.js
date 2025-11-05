@@ -1,17 +1,27 @@
+/*********************************************************************
+ * EyeNav3D — Annotated Core
+ * ---------------------------------------------------------------
+ * This script uses MediaPipe FaceLandmarker to locate eye & iris
+ * landmarks and converts them to screen coordinates.
+ *********************************************************************/
+
 import {
   FaceLandmarker,
   FilesetResolver
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
 
-const video   = document.getElementById("videoFeed");
-const dot     = document.getElementById("dot");
-const status  = document.getElementById("status");
-const eyeMode = document.getElementById("eyeToggle");
+const video  = document.getElementById("videoFeed");
+const dot    = document.getElementById("dot");
+const status = document.getElementById("status");
 
 let faceLandmarker;
-let baselineDepth = null;
+let baselineDepth = null;   // used for distance normalization
 
-// -------------------------------- INIT --------------------------------------
+/*********************************************************************
+ *  SECTION 1: Initialization
+ *  - Sets up webcam stream
+ *  - Loads MediaPipe model
+ *********************************************************************/
 async function init() {
   try {
     status.textContent = "Loading model…";
@@ -26,112 +36,114 @@ async function init() {
       numFaces: 1
     });
 
+    // 🎥 Start camera
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
     await new Promise(r => video.onloadedmetadata = () => { video.play(); r(); });
 
     status.textContent = "Tracking active 👁️";
     runTracking();
-  } catch(e) {
-    console.error(e);
-    status.textContent = "Initialization error.";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Error initializing camera/model.";
   }
 }
 
-// -------------------------------- TRACK LOOP --------------------------------
-const smooth = {x: innerWidth/2, y: innerHeight/2};
-const smoothFactor = 0.18;
+/*********************************************************************
+ *  SECTION 2: Adjustable Parameters
+ *  - Change these to tune responsiveness and range.
+ *********************************************************************/
+const params = {
+  smoothFactor: 0.18,   // 0 → instant, 1 → frozen
+  gainX: 6.0,           // sensitivity horizontally
+  gainY: 6.0,           // sensitivity vertically
+  scaleBoost: 3.4,      // enlarges entire motion field
+  baseFOV: 60,          // assumed webcam field of view (deg)
+};
 
+const smooth = { x: innerWidth/2, y: innerHeight/2 };
+
+/*********************************************************************
+ *  SECTION 3: Main Tracking Loop
+ *********************************************************************/
 async function runTracking() {
-  if(!faceLandmarker){requestAnimationFrame(runTracking);return;}
+  if (!faceLandmarker) { requestAnimationFrame(runTracking); return; }
 
   const res = await faceLandmarker.detectForVideo(video, performance.now());
-  if(!res.faceLandmarks.length){requestAnimationFrame(runTracking);return;}
+  if (!res.faceLandmarks.length) { requestAnimationFrame(runTracking); return; }
 
+  // --- Landmark extraction ---
   const lm = res.faceLandmarks[0];
-  const leftEyeOuter = lm[33];
-  const rightEyeOuter = lm[263];
-  const leftIris = lm[468];
+  const leftEye   = lm[33];
+  const rightEye  = lm[263];
+  const leftIris  = lm[468];
   const rightIris = lm[473];
-  const noseTip = lm[1];
+  const noseTip   = lm[1];
 
-  // --- select eye(s) --------------------------------------------------------
-  const eyeChoice = eyeMode.value;
-  let eyeCenter, irisCenter;
-  if(eyeChoice === "left"){
-    eyeCenter = leftEyeOuter;
-    irisCenter = leftIris;
-  } else if(eyeChoice === "right"){
-    eyeCenter = rightEyeOuter;
-    irisCenter = rightIris;
-  } else {
-    eyeCenter = {
-      x:(leftEyeOuter.x+rightEyeOuter.x)/2,
-      y:(leftEyeOuter.y+rightEyeOuter.y)/2,
-      z:(leftEyeOuter.z+rightEyeOuter.z)/2
-    };
-    irisCenter = {
-      x:(leftIris.x+rightIris.x)/2,
-      y:(leftIris.y+rightIris.y)/2,
-      z:(leftIris.z+rightIris.z)/2
-    };
-  }
-
-  // --- establish baseline depth --------------------------------------------
-  if(!baselineDepth) baselineDepth = Math.abs(noseTip.z);
-
-  // --- 3D vectors -----------------------------------------------------------
-  const gazeVec = {
-    x: irisCenter.x - eyeCenter.x,
-    y: irisCenter.y - eyeCenter.y,
-    z: irisCenter.z - eyeCenter.z
-  };
-  // normalize
-  const len = Math.hypot(gazeVec.x, gazeVec.y, gazeVec.z) || 1;
-  gazeVec.x/=len; gazeVec.y/=len; gazeVec.z/=len;
-
-  // --- head position (approx center) ---------------------------------------
+  // --- Calculate centers ---
   const faceCenter = {
-    x:(leftEyeOuter.x+rightEyeOuter.x)/2,
-    y:(leftEyeOuter.y+rightEyeOuter.y)/2,
-    z:(leftEyeOuter.z+rightEyeOuter.z)/2
+    x: (leftEye.x + rightEye.x) / 2,
+    y: (leftEye.y + rightEye.y) / 2,
+    z: (leftEye.z + rightEye.z) / 2,
+  };
+  const irisAvg = {
+    x: (leftIris.x + rightIris.x) / 2,
+    y: (leftIris.y + rightIris.y) / 2,
+    z: (leftIris.z + rightIris.z) / 2,
   };
 
-  // --- depth compensation ---------------------------------------------------
+  // --- Distance normalization ---
+  if (!baselineDepth) baselineDepth = Math.abs(faceCenter.z);
   const depthScale = baselineDepth / Math.abs(faceCenter.z || 1);
 
-  // --- screen-plane intersection -------------------------------------------
-  // simple pinhole-camera projection model:
-  const FOV = 60 * Math.PI/180;  // ~60° horizontal webcam FOV
-  const focalLength = 0.5 / Math.tan(FOV/2); // normalized focal length
+  /*******************************************************************
+   *  STEP A: Compute relative eye offset
+   *  offset = iris - faceCenter
+   *******************************************************************/
+  const offset = {
+    x: (irisAvg.x - faceCenter.x) * params.gainX * depthScale,
+    y: (irisAvg.y - faceCenter.y) * params.gainY * depthScale
+  };
 
-  // project gaze vector from eyeCenter toward z=0 (screen plane)
-  const t = faceCenter.z / Math.abs(gazeVec.z || 1e-6);
-  const hitX = (eyeCenter.x + gazeVec.x * t) * depthScale;
-  const hitY = (eyeCenter.y + gazeVec.y * t) * depthScale;
+  /*******************************************************************
+   *  STEP B: Convert normalized coordinates (0–1) → screen px
+   *  0.5 = center of screen.
+   *******************************************************************/
+  let x = innerWidth  * (0.5 - offset.x * 2.0);
+  let y = innerHeight * (0.5 + offset.y * 2.0);
 
-  // --- convert normalized (0–1) → screen px -------------------------------
-  const rect = video.getBoundingClientRect();
-  const mirroredX = rect.left + (rect.right - hitX*rect.width);
-  const screenX = (mirroredX - rect.left) / rect.width;
-  const screenY = hitY;
+  // Apply global amplification
+  x = innerWidth  /2 + (x - innerWidth /2) * params.scaleBoost;
+  y = innerHeight /2 + (y - innerHeight/2) * params.scaleBoost;
 
-  let x = innerWidth  * screenX;
-  let y = innerHeight * screenY;
+  /*******************************************************************
+   *  STEP C: Smoothing and Clamping
+   *******************************************************************/
+  smooth.x = smooth.x*(1-params.smoothFactor) + x*params.smoothFactor;
+  smooth.y = smooth.y*(1-params.smoothFactor) + y*params.smoothFactor;
+  smooth.x = Math.max(0, Math.min(innerWidth , smooth.x));
+  smooth.y = Math.max(0, Math.min(innerHeight, smooth.y));
 
-  // --- smoothing ------------------------------------------------------------
-  smooth.x = smooth.x*(1-smoothFactor)+x*smoothFactor;
-  smooth.y = smooth.y*(1-smoothFactor)+y*smoothFactor;
-  smooth.x = Math.max(0,Math.min(innerWidth ,smooth.x));
-  smooth.y = Math.max(0,Math.min(innerHeight,smooth.y));
+  /*******************************************************************
+   *  STEP D: Draw cursor dot
+   *******************************************************************/
+  dot.style.left = `${smooth.x-10}px`;
+  dot.style.top  = `${smooth.y-10}px`;
 
-  dot.style.left = `${smooth.x-9}px`;
-  dot.style.top  = `${smooth.y-9}px`;
+  /*******************************************************************
+   *  (Optional) Diagnostic Overlay in console
+   *******************************************************************/
+  // console.log({offset, depthScale, smooth});
 
   requestAnimationFrame(runTracking);
 }
 
-// -------------------------------- EVENTS ------------------------------------
-addEventListener("resize",()=>{smooth.x=innerWidth/2;smooth.y=innerHeight/2;});
-init();
+/*********************************************************************
+ *  SECTION 4: Utility Events
+ *********************************************************************/
+addEventListener("resize", () => {
+  smooth.x = innerWidth / 2;
+  smooth.y = innerHeight / 2;
+});
 
+init();

@@ -3,124 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EyeNav — Gaze Cursor</title>
+  <title>EyeNav — Calibrated Gaze Cursor</title>
   <style>
-    :root {
-      --bg: #050505;
-      --accent: #00f0e6;
-      --muted: #222;
-      --uiBg: rgba(0,0,0,0.6);
-      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    :root{
+      --bg:#050505; --accent:#00f0e6; --uiBg:rgba(0,0,0,0.6);
+      --mono:"SFMono-Regular", Consolas, "Liberation Mono", monospace;
     }
-    html,body { height:100%; margin:0; background:var(--bg); color:var(--accent); font-family:var(--mono); }
-    /* layout: left preview, right controls */
-    #app {
-      display:grid;
-      grid-template-columns: 1fr 360px;
-      gap:18px;
-      height:100vh;
-      align-items:center;
-      padding:18px;
-      box-sizing:border-box;
-      transition: all 220ms ease;
-    }
-
-    /* when controls hidden we center preview in full viewport */
-    #app.controls-collapsed { grid-template-columns: 1fr; justify-items:center; padding:0; }
-
-    /* Left: preview & stage */
-    #stage {
-      position:relative;
-      width:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    /* Preview window (mirrored camera controlled by JS) */
-    #preview {
-      width:70vmin;
-      height:70vmin;
-      max-width:900px;
-      max-height:900px;
-      background:#111;
-      border:1px solid rgba(255,255,255,0.06);
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--accent);font-family:var(--mono);}
+    /* Grid still used for layout, but preview is fixed center */
+    #app{display:grid;grid-template-columns: 1fr 360px;gap:18px;height:100vh;padding:18px;box-sizing:border-box;}
+    /* Stage area (left) */
+    #stage{position:relative; display:flex; align-items:center; justify-content:center; min-height:100%;}
+    /* Preview pinned center of viewport (fixed) so menu doesn't shift it */
+    #preview{
+      width:70vmin; height:70vmin; max-width:900px; max-height:900px;
+      background:#111; border:1px solid rgba(255,255,255,0.06);
       box-shadow:0 6px 30px rgba(0,0,0,0.6);
-      position:relative;
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      margin: 0 auto;
+      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+      overflow:hidden; display:flex; align-items:center; justify-content:center; z-index:2;
     }
-    video#videoFeed {
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      filter: saturate(.9) contrast(.95);
-      transform-origin: center center;
-    }
-
-    /* The gaze dot (viewport fixed so it can touch edges) */
-    #dot {
-      position:fixed;
-      width:22px;
-      height:22px;
-      border-radius:50%;
-      background:var(--accent);
-      box-shadow:0 2px 12px rgba(0,255,240,0.25);
-      pointer-events:none;
-      transform: translate(-50%,-50%);
-      z-index:9999;
-    }
-
+    video#videoFeed{ width:100%; height:100%; object-fit:cover; filter:saturate(.95) contrast(.95); transform-origin:center center; }
+    /* gaze dot is fixed on viewport coordinates */
+    #dot{ position:fixed; width:22px; height:22px; border-radius:50%; background:var(--accent); box-shadow:0 2px 12px rgba(0,255,240,0.25); pointer-events:none; transform:translate(-50%,-50%); z-index:9999; }
     /* Right: controls */
-    #controls {
-      background:var(--uiBg);
-      padding:14px;
-      border-radius:10px;
-      color:var(--accent);
-      min-height:220px;
-      max-height:calc(100vh - 48px);
-      overflow:auto;
-    }
-    .section { margin-bottom:12px; }
-    label { display:flex; justify-content:space-between; gap:12px; font-size:13px; color:#9df7ef; }
-    input[type=range] { width:100%; margin-top:6px; }
-    select, button { width:100%; padding:8px; margin-top:8px; background:#000; border:1px solid rgba(0,255,240,0.12); color:var(--accent); }
-    .row { display:flex; gap:8px; align-items:center; }
-    .small { font-size:12px; color:#9df7ef; }
-
-    /* status bar at bottom-left */
-    #status {
-      position:fixed;
-      left:10px;
-      bottom:8px;
-      font-size:14px;
-      color:var(--accent);
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .statDot { width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(0,255,240,0.15); }
-
-    /* small helper text */
-    .help { font-size:12px; color:#9df7ef; opacity:.85; margin-top:6px; }
-
-    /* debug overlay */
-    #debug {
-      position:fixed;
-      right:12px;
-      bottom:70px;
-      background:rgba(0,0,0,0.55);
-      color:var(--accent);
-      padding:8px;
-      font-size:12px;
-      border-radius:6px;
-      pointer-events:none;
-      z-index:99999;
-      max-width:320px;
-    }
+    #controls{ background:var(--uiBg); padding:14px; border-radius:10px; color:var(--accent); max-height:calc(100vh - 36px); overflow:auto; }
+    .section{ margin-bottom:12px; }
+    label{ display:flex; justify-content:space-between; gap:12px; font-size:13px; color:#9df7ef; }
+    input[type=range]{ width:100%; margin-top:6px; }
+    select, button{ width:100%; padding:8px; margin-top:8px; background:#000; border:1px solid rgba(0,255,240,0.12); color:var(--accent); cursor:pointer; }
+    .help{ font-size:12px; color:#9df7ef; opacity:.85; margin-top:6px; }
+    /* status small */
+    #status{ position:fixed; left:10px; bottom:8px; font-size:14px; color:var(--accent); display:flex; align-items:center; gap:8px; z-index:99999; }
+    .statDot{ width:14px; height:14px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px rgba(0,255,240,0.15); }
+    /* debug on right (won't overlap controls) */
+    #debug{ position:fixed; right:12px; top:110px; width:320px; background:rgba(0,0,0,0.55); color:var(--accent); padding:8px; font-size:12px; border-radius:6px; z-index:99999; display:none; pointer-events:none; }
+    /* small instructions */
+    .big{ font-size:14px; color:#9df7ef; margin-bottom:6px; }
   </style>
 </head>
 <body>
@@ -129,11 +47,15 @@
       <div id="preview">
         <video id="videoFeed" autoplay muted playsinline></video>
       </div>
-      <!-- gaze dot is positioned on viewport (not within preview) -->
       <div id="dot" title="gaze dot"></div>
     </div>
 
     <aside id="controls" aria-label="Calibration & settings">
+      <div class="section">
+        <div class="big">Calibration-based mapping (H/V gains removed)</div>
+        <div class="help">Use the guided calibration flow to map your eye vectors to screen edges. This replaces trial-and-error gain fiddling.</div>
+      </div>
+
       <div class="section">
         <label>Eye selection
           <select id="eyeMode">
@@ -149,34 +71,12 @@
         <label>Mirror preview
           <input type="checkbox" id="mirrorToggle" checked>
         </label>
-        <div class="help">When checked the camera preview is mirrored (like a selfie). Toggling updates X mapping.</div>
-      </div>
-
-      <div class="section">
-        <label>Invert Y axis
-          <input type="checkbox" id="invertY">
-        </label>
-        <div class="help">When checked vertical movement is inverted.</div>
-      </div>
-
-      <div class="section">
-        <label>Horizontal gain (<span id="gainXval">11.0</span>)</label>
-        <input id="gainX" type="range" min="0.5" max="120" step="0.5" value="11">
-      </div>
-
-      <div class="section">
-        <label>Vertical gain (<span id="gainYval">35.0</span>)</label>
-        <input id="gainY" type="range" min="0.5" max="120" step="0.5" value="35">
-      </div>
-
-      <div class="section">
-        <label>Global scale boost (<span id="scaleVal">3.45</span>)</label>
-        <input id="scaleBoost" type="range" min="0.5" max="8" step="0.01" value="3.45">
+        <div class="help">When checked the camera preview is mirrored (selfie-style).</div>
       </div>
 
       <div class="section">
         <label>Smoothness (<span id="smoothVal">0.04</span>)</label>
-        <input id="smoothFactor" type="range" min="0.01" max="0.4" step="0.005" value="0.04">
+        <input id="smoothFactor" type="range" min="0.01" max="0.35" step="0.005" value="0.04">
       </div>
 
       <div class="section">
@@ -185,21 +85,31 @@
         <div class="help">Adjust if camera is far/near so movement is consistent regardless of distance.</div>
       </div>
 
-      <div class="section row">
-        <button id="zeroCenter">Recenter calibration</button>
-        <button id="toggleControls">Collapse</button>
+      <div class="section">
+        <label>Invert Y axis
+          <input type="checkbox" id="invertY">
+        </label>
+      </div>
+
+      <div class="section">
+        <button id="startCal">Start Calibration</button>
+        <div class="help" id="calInstr">Calibration not started.</div>
+      </div>
+
+      <div class="section">
+        <button id="recenterBtn">Quick Recenter (neutral)</button>
+        <div class="help">When you are looking center, press to set neutral baseline quickly.</div>
       </div>
 
       <div style="margin-top:12px; font-size:12px; color:#9df7ef;">
         <div>Notes:</div>
-        <div style="opacity:.85; margin-top:6px;">Move your head freely — cursor will track gaze relative to face. Tune gains & smooth for sensitivity. Use Recenter to set your neutral when eyes are centered.</div>
+        <div style="opacity:.85; margin-top:6px;">Calibration captures your actual eye vectors when looking at edges and computes a transform to map gaze to the screen. Use screenshots to capture debug readings for diagnostic analysis.</div>
       </div>
     </aside>
   </div>
 
   <div id="status"><span class="statDot"></span><span id="statusText">Loading...</span></div>
-
-  <div id="debug" aria-hidden="true" style="display:none"></div>
+  <div id="debug" aria-hidden="true"></div>
 
   <script type="module" src="./main.js"></script>
 </body>

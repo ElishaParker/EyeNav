@@ -1,39 +1,176 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>EyeNav Prototype</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  /* --- Layout and appearance --- */
-  html, body {margin:0; padding:0; height:100%; overflow:hidden; background:#111;}
-  #videoFeed {
-    position:fixed; top:50%; left:50%;
-    transform:translate(-50%,-50%) scaleX(-1);  /* mirror like phone selfie */
-    width:640px; height:480px; object-fit:cover;
-    background:#000; border:2px solid #333;
-  }
-  #dot {
-    position:fixed; width:20px; height:20px;
-    border-radius:50%; background:cyan;
-    mix-blend-mode:difference; pointer-events:none;
-  }
-  #status {
-    position:fixed; bottom:10px; left:10px;
-    color:#0ff; font-family:monospace;
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EyeNav — Gaze Cursor</title>
+  <style>
+    :root {
+      --bg: #050505;
+      --accent: #00f0e6;
+      --muted: #222;
+      --uiBg: rgba(0,0,0,0.6);
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+    html,body { height:100%; margin:0; background:var(--bg); color:var(--accent); font-family:var(--mono); }
+    #app {
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+      height:100%;
+      align-items:start;
+      padding:18px;
+      box-sizing:border-box;
+    }
+
+    /* Left: preview & stage */
+    #stage {
+      position:relative;
+      background:transparent;
+      min-height:calc(100vh - 36px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Preview window (mirrored camera) */
+    #preview {
+      width:70vmin;
+      height:70vmin;
+      max-width:900px;
+      max-height:900px;
+      background:#111;
+      border:1px solid rgba(255,255,255,0.06);
+      box-shadow:0 6px 30px rgba(0,0,0,0.6);
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    video#videoFeed {
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      -webkit-transform: scaleX(-1); /* show mirrored like phone */
+      transform: scaleX(-1);
+      filter: saturate(.9) contrast(.95);
+    }
+
+    /* The gaze dot */
+    #dot {
+      position:fixed; /* absolute on viewport coordinates */
+      width:22px;
+      height:22px;
+      border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 2px 12px rgba(0,255,240,0.25);
+      pointer-events:none;
+      transform: translate(-50%,-50%); /* center dot */
+      z-index:9999;
+    }
+
+    /* Right: controls */
+    #controls {
+      background:var(--uiBg);
+      padding:14px;
+      border-radius:10px;
+      color:var(--accent);
+      min-height:220px;
+    }
+    .section { margin-bottom:12px; }
+    label { display:flex; justify-content:space-between; gap:12px; font-size:13px; color:#9df7ef; }
+    input[type=range] { width:100%; margin-top:6px; }
+    select, button { width:100%; padding:8px; margin-top:8px; background:#000; border:1px solid rgba(0,255,240,0.12); color:var(--accent); }
+    .row { display:flex; gap:8px; align-items:center; }
+    .small { font-size:12px; color:#9df7ef; opacity:.9; }
+
+    /* status bar at bottom-left */
+    #status {
+      position:fixed;
+      left:10px;
+      bottom:8px;
+      font-size:14px;
+      color:var(--accent);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .statDot { width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(0,255,240,0.15); }
+
+    /* small helper text */
+    .help { font-size:12px; color:#9df7ef; opacity:.85; margin-top:6px; }
+  </style>
 </head>
 <body>
-  <!-- 📷 Camera feed -->
-  <video id="videoFeed" autoplay playsinline></video>
+  <div id="app">
+    <div id="stage">
+      <div id="preview">
+        <video id="videoFeed" autoplay muted playsinline></video>
+      </div>
+      <!-- gaze dot is positioned on viewport (not within preview) so it can go to full-screen edges -->
+      <div id="dot" title="gaze dot"></div>
+    </div>
 
-  <!-- 🔵 Cursor dot -->
-  <div id="dot"></div>
+    <aside id="controls" aria-label="Calibration & settings">
+      <div class="section">
+        <label>Eye selection
+          <select id="eyeMode">
+            <option value="both" selected>Both eyes</option>
+            <option value="left">Left eye only</option>
+            <option value="right">Right eye only</option>
+          </select>
+        </label>
+        <div class="help">Choose which eye(s) drive the cursor.</div>
+      </div>
 
-  <!-- 🧾 Status readout -->
-  <div id="status">Loading model…</div>
+      <div class="section">
+        <label>Mirror preview
+          <input type="checkbox" id="mirrorToggle" checked>
+        </label>
+        <div class="help">When checked the camera preview is mirrored (like a selfie). Toggling updates X mapping.</div>
+      </div>
 
+      <div class="section">
+        <label>Horizontal gain (<span id="gainXval">11.0</span>)</label>
+        <input id="gainX" type="range" min="1" max="120" step="0.5" value="11">
+      </div>
+
+      <div class="section">
+        <label>Vertical gain (<span id="gainYval">35.0</span>)</label>
+        <input id="gainY" type="range" min="1" max="120" step="0.5" value="35">
+      </div>
+
+      <div class="section">
+        <label>Global scale boost (<span id="scaleVal">3.45</span>)</label>
+        <input id="scaleBoost" type="range" min="0.5" max="8" step="0.01" value="3.45">
+      </div>
+
+      <div class="section">
+        <label>Smoothness (<span id="smoothVal">0.04</span>)</label>
+        <input id="smoothFactor" type="range" min="0.01" max="0.4" step="0.005" value="0.04">
+      </div>
+
+      <div class="section">
+        <label>Distance normalization (ref face size) <span id="refSizeVal">0.13</span></label>
+        <input id="refFaceSize" type="range" min="0.06" max="0.28" step="0.001" value="0.13">
+        <div class="help">Adjust if camera is far/near so movement is consistent regardless of distance.</div>
+      </div>
+
+      <div style="margin-top:8px;">
+        <button id="zeroCenter">Recenter calibration</button>
+      </div>
+
+      <div style="margin-top:12px; font-size:12px; color:#9df7ef;">
+        <div>Notes:</div>
+        <div style="opacity:.85; margin-top:6px;">Move your head freely — cursor will track gaze relative to face. Tune gains & smooth for sensitivity.</div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="status"><span class="statDot"></span><span id="statusText">Loading...</span></div>
+
+  <!-- include main script (module) -->
   <script type="module" src="./main.js"></script>
 </body>
 </html>

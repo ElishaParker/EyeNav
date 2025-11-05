@@ -54,8 +54,8 @@ async function runTracking() {
 
   const lm = res.faceLandmarks[0];
   const noseTip   = lm[1];
-  const leftEye   = lm[35];
-  const rightEye  = lm[261];
+  const leftEye   = lm[33];
+  const rightEye  = lm[263];
   const leftIris  = lm[468];
   const rightIris = lm[473];
 
@@ -84,7 +84,7 @@ async function runTracking() {
 
 
   // --- 🔧 Global amplification multiplier ---
-const scaleBoost = 3.45; // increase if still confined; try 3–5
+const scaleBoost = 3.455; // increase if still confined; try 3–5
 x = window.innerWidth  / 2 + (x - window.innerWidth  / 2) * scaleBoost;
 y = window.innerHeight / 2 + (y - window.innerHeight / 2) * scaleBoost;
 

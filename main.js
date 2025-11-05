@@ -54,8 +54,8 @@ async function runTracking() {
 
   const lm = res.faceLandmarks[0];
   const noseTip   = lm[1];
-  const leftEye   = lm[33];
-  const rightEye  = lm[263];
+  const leftEye   = lm[35];
+  const rightEye  = lm[261];
   const leftIris  = lm[468];
   const rightIris = lm[473];
 
